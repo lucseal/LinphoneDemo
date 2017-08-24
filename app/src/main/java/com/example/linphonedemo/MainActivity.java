@@ -17,10 +17,12 @@ import org.linphone.core.LinphoneAddress;
 import org.linphone.core.LinphoneAuthInfo;
 import org.linphone.core.LinphoneCall;
 import org.linphone.core.LinphoneCallParams;
+import org.linphone.core.LinphoneContent;
 import org.linphone.core.LinphoneCore;
 import org.linphone.core.LinphoneCoreException;
 import org.linphone.core.LinphoneCoreFactory;
 import org.linphone.core.LinphoneCoreListenerBase;
+import org.linphone.core.LinphoneInfoMessage;
 import org.linphone.core.LinphoneProxyConfig;
 import org.linphone.mediastream.video.AndroidVideoWindowImpl;
 
@@ -65,7 +67,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             @Override
             public void callState(LinphoneCore lc, LinphoneCall call, LinphoneCall.State state, String message) {
                 if (state == LinphoneCall.State.IncomingReceived) {
-                    call.enableCamera(true);
+                    if (!call.cameraEnabled()) {
+                        call.enableCamera(true);
+                    }
                     Toast.makeText(MainActivity.this, "on call", Toast.LENGTH_SHORT).show();
                 } else if (state == LinphoneCall.State.OutgoingInit || state == LinphoneCall.State.OutgoingProgress) {
                     Toast.makeText(MainActivity.this, "out going", Toast.LENGTH_SHORT).show();
@@ -117,7 +121,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mBtnTerminate.setOnClickListener(this);
         mBtnAccept.setOnClickListener(this);
 
-        mCaptureView.getHolder().setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+//        mCaptureView.getHolder().setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
         androidVideoWindowImpl = new AndroidVideoWindowImpl(mVideoView, mCaptureView, new AndroidVideoWindowImpl.VideoWindowListener() {
             @Override
             public void onVideoRenderingSurfaceReady(AndroidVideoWindowImpl androidVideoWindow, SurfaceView surfaceView) {
@@ -133,7 +137,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             @Override
             public void onVideoPreviewSurfaceReady(AndroidVideoWindowImpl androidVideoWindow, SurfaceView surfaceView) {
                 mCaptureView = surfaceView;
-                LinphoneManager.getLc().setPreviewWindow(mCaptureView);
+                LinphoneManager.getLc().setPreviewWindow(null);
+                LinphoneManager.getLc().setPreviewWindow(surfaceView);
             }
 
             @Override
@@ -199,13 +204,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
             LinphoneAddress identityAddr = LinphoneCoreFactory.instance().createLinphoneAddress(sipAddress);
             LinphoneAddress proxyAddr = LinphoneCoreFactory.instance().createLinphoneAddress("sip:" + domain);
-            identityAddr.setTransport(LinphoneAddress.TransportType.LinphoneTransportTcp);
+//            identityAddr.setTransport(LinphoneAddress.TransportType.LinphoneTransportTcp);
             proxyAddr.setTransport(LinphoneAddress.TransportType.LinphoneTransportTcp);
             proxyConfig = LinphoneManager.getLc().createProxyConfig(identityAddr.asString(), proxyAddr.asStringUriOnly(), domain, true);
             proxyConfig.setExpires(3600);
             proxyConfig.enableRegister(true);
             proxyConfig.setRealm("sip.linphone.org");
             proxyConfig.enableAvpf(true);
+            //添加到proxy列表
             LinphoneManager.getLc().addProxyConfig(proxyConfig);
             authInfo = LinphoneCoreFactory.instance().createAuthInfo(userName, password, domain, domain);
             LinphoneManager.getLc().addAuthInfo(authInfo);
@@ -218,6 +224,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private void call() {
         if (LinphoneManager.getLc().isIncall()) {
+            Toast.makeText(this, "has call in progress, please try again", Toast.LENGTH_SHORT).show();
+            LinphoneCall[] calls = LinphoneManager.getLc().getCalls();
+            for (LinphoneCall call : calls) {
+                LinphoneManager.getLc().terminateCall(call);
+            }
             return;
         }
         String callTo = mEtCallTo.getText().toString();

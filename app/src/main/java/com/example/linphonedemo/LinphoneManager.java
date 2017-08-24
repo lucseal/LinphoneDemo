@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.res.Resources;
 import android.media.AudioManager;
 import android.util.Log;
+import android.widget.Toast;
 
 import org.linphone.core.LinphoneAddress;
 import org.linphone.core.LinphoneAuthInfo;
@@ -20,9 +21,13 @@ import org.linphone.core.LinphoneEvent;
 import org.linphone.core.LinphoneFriend;
 import org.linphone.core.LinphoneFriendList;
 import org.linphone.core.LinphoneInfoMessage;
+import org.linphone.core.LinphoneNatPolicy;
 import org.linphone.core.LinphoneProxyConfig;
+import org.linphone.core.PayloadType;
 import org.linphone.core.PublishState;
 import org.linphone.core.SubscriptionState;
+import org.linphone.core.TunnelConfig;
+import org.linphone.core.VideoSize;
 import org.linphone.mediastream.video.capture.hwconf.AndroidCameraConfiguration;
 import org.linphone.tools.H264Helper;
 
@@ -85,11 +90,14 @@ public class LinphoneManager implements LinphoneCoreListener {
             copyFromPackage(R.raw.linphonerc_factory, new File(mLinphoneFactoryConfigFile).getName());
             copyFromPackage(R.raw.assistant_create, new File(mDynamicConfigFile).getName());
 
+            //创建core
             LinphoneCoreFactory.instance().setDebugMode(true, "myPhone");
             mLc = LinphoneCoreFactory.instance().createLinphoneCore(
                     this
                     , context);
+            //iterate   处理注册 sip消息 ...
             startIterate();
+            //初始化配置
             initLiblinphone();
 
         } catch (LinphoneCoreException | IOException e) {
@@ -105,7 +113,7 @@ public class LinphoneManager implements LinphoneCoreListener {
                     @Override
                     public void run() {
                         if (mLc != null) {
-                           mLc.iterate();
+                            mLc.iterate();
                         }
                     }
                 });
@@ -118,13 +126,14 @@ public class LinphoneManager implements LinphoneCoreListener {
 
     private void initLiblinphone() {
         Log.d("myPhone", "initLiblinphone: init!!!!!!!!!!!!!!!");
-        H264Helper.setH264Mode(H264Helper.MODE_AUTO, mLc);
+//        H264Helper.setH264Mode(H264Helper.MODE_AUTO, mLc);
 //        mLc.setMaxCalls(1);
         mLc.enableVideo(true, true);
         mLc.setNetworkReachable(true);
         mLc.enableSpeaker(true);
         mLc.setUserAgent("LinphoneAndroid", "3.10.2");
 //        mLc.setRootCA(mLinphoneRootCaFile);
+        //set video cam
         int camId = 0;
         AndroidCameraConfiguration.AndroidCamera[] cameras = AndroidCameraConfiguration.retrieveCameras();
         for (AndroidCameraConfiguration.AndroidCamera cam : cameras) {
@@ -134,8 +143,46 @@ public class LinphoneManager implements LinphoneCoreListener {
             }
         }
         mLc.setVideoDevice(camId);
+        //auto accept video call
         mLc.setVideoPolicy(true, true);
-        mLc.getConfig().loadXmlFile(mDynamicConfigFile);
+//        mLc.getConfig().loadXmlFile(mDynamicConfigFile);
+
+        //nat
+        LinphoneNatPolicy natPolicy = mLc.createNatPolicy();
+        natPolicy.setStunServer("stun.linphone.org");
+        natPolicy.enableIce(true);
+        natPolicy.enableStun(true);
+        mLc.setNatPolicy(natPolicy);
+
+        //http proxy
+        TunnelConfig tunnelConfig = LinphoneCoreFactory.instance().createTunnelConfig();
+        tunnelConfig.setPort(443);
+        mLc.tunnelAddServer(tunnelConfig);
+
+        //video & audio preferred setting
+        mLc.setPreferredVideoSize(VideoSize.VIDEO_SIZE_QVGA);
+        mLc.setPreferredFramerate(20f);
+        mLc.setVideoPort(9078); //设置视频UDP 端口
+        mLc.setAudioPort(7076);
+        mLc.setAudioJittcomp(60); //缓冲区大小，以毫秒记
+        mLc.setVideoJittcomp(60); //设置视频缓冲区大小，以毫秒记
+        mLc.setNortpTimeout(30);
+        //echo
+        mLc.enableEchoCancellation(true);
+        mLc.enableEchoLimiter(true);
+
+        //enable video payloadtype ? how it works
+//        PayloadType[] types = mLc.getVideoCodecs();
+//        for (PayloadType codec : types) {
+//            if (codec.getMime().equals("VP8")) {
+//                try {
+//                    mLc.setPayloadTypeBitrate(codec, 45000); //bitrate
+//                    mLc.enablePayloadType(codec, true);
+//                } catch (LinphoneCoreException e) {
+//                    e.printStackTrace();
+//                }
+//            }
+//        }
 
     }
 
