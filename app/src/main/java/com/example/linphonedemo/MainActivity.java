@@ -24,6 +24,8 @@ import org.linphone.core.LinphoneCoreFactory;
 import org.linphone.core.LinphoneCoreListenerBase;
 import org.linphone.core.LinphoneInfoMessage;
 import org.linphone.core.LinphoneProxyConfig;
+import org.linphone.core.PayloadType;
+import org.linphone.mediastream.MediastreamException;
 import org.linphone.mediastream.video.AndroidVideoWindowImpl;
 
 import java.util.ArrayList;
@@ -35,6 +37,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Button mBtnAccept;
     private EditText mEtUser;
     private EditText mEtCallTo;
+    private EditText mEtPassword;
 
     private SurfaceView mVideoView;
     private SurfaceView mCaptureView;
@@ -47,15 +50,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private LinphoneCall mCall;
 
     private String userName;
-    public static final String password = "123456";
-    private static final String domain = "sip.linphone.org";
+    private String password;
+    private static final String DOMAIN = "sip01.siriustek.cn";
+    public static final String REALM = "test.com";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-//        startIterate();
 
         mListener = new LinphoneCoreListenerBase() {
             @Override
@@ -86,25 +88,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     }
 
-//    private void startIterate() {
-//        TimerTask lTask = new TimerTask() {
-//            @Override
-//            public void run() {
-//                UIThreadDispatcher.dispatch(new Runnable() {
-//                    @Override
-//                    public void run() {
-//                        if (LinphoneManager.getLc() != null) {
-//                            LinphoneManager.getLc().iterate();
-//                        }
-//                    }
-//                });
-//            }
-//        };
-//
-//        Timer mTimer = new Timer("Linphone scheduler");
-//        mTimer.schedule(lTask, 0, 20);
-//    }
-
     private void initView() {
         mVideoView = findViewById(R.id.videoSurface);
         mCaptureView = findViewById(R.id.videoCaptureSurface);
@@ -115,6 +98,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mBtnAccept = findViewById(R.id.btn_accept);
         mEtCallTo = findViewById(R.id.et_call_to);
         mEtUser = findViewById(R.id.et_user);
+        mEtPassword = findViewById(R.id.et_password);
 
         mBtnReg.setOnClickListener(this);
         mBtnCall.setOnClickListener(this);
@@ -151,7 +135,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void checkAndRequestCallPermissions() {
-        ArrayList<String> permissionsList = new ArrayList<String>();
+        ArrayList<String> permissionsList = new ArrayList<>();
 
         int recordAudio = getPackageManager().checkPermission(Manifest.permission.RECORD_AUDIO, getPackageName());
         org.linphone.mediastream.Log.i("[Permission] Record audio permission is " + (recordAudio == PackageManager.PERMISSION_GRANTED ? "granted" : "denied"));
@@ -182,38 +166,28 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void register() {
-//        PayloadType[] types = LinphoneManager.getLc().getVideoCodecs();
-//        for (PayloadType codec : types) {
-//            if (codec.getMime().equals("H264")) {
-//                try {
-//                    LinphoneManager.getLc().enablePayloadType(codec, true);
-//                } catch (LinphoneCoreException e) {
-//                    e.printStackTrace();
-//                }
-//            }
-//        }
         userName = mEtUser.getText().toString();
+        password = mEtPassword.getText().toString();
         if (userName.length() == 0) {
             return;
         }
-        String sipAddress = "sip:" + userName + "@" + domain;
+        String sipAddress = "sip:" + userName + "@" + REALM;
         try {
             if (LinphoneManager.getLc().getDefaultProxyConfig() != null) {
-                LinphoneManager.getLc().clearAuthInfos();
-                LinphoneManager.getLc().clearProxyConfigs();
+                LinphoneManager.getLc().refreshRegisters();
+                return;
             }
             LinphoneAddress identityAddr = LinphoneCoreFactory.instance().createLinphoneAddress(sipAddress);
-            LinphoneAddress proxyAddr = LinphoneCoreFactory.instance().createLinphoneAddress("sip:" + domain);
-//            identityAddr.setTransport(LinphoneAddress.TransportType.LinphoneTransportTcp);
+            LinphoneAddress proxyAddr = LinphoneCoreFactory.instance().createLinphoneAddress("sip:" + DOMAIN);
+            identityAddr.setTransport(LinphoneAddress.TransportType.LinphoneTransportTcp);
             proxyAddr.setTransport(LinphoneAddress.TransportType.LinphoneTransportTcp);
-            proxyConfig = LinphoneManager.getLc().createProxyConfig(identityAddr.asString(), proxyAddr.asStringUriOnly(), domain, true);
+            proxyConfig = LinphoneManager.getLc().createProxyConfig(identityAddr.asString(), proxyAddr.asStringUriOnly(), proxyAddr.asStringUriOnly(), true);
             proxyConfig.setExpires(3600);
-            proxyConfig.enableRegister(true);
-            proxyConfig.setRealm("sip.linphone.org");
+            proxyConfig.setRealm(REALM);
             proxyConfig.enableAvpf(true);
             //添加到proxy列表
             LinphoneManager.getLc().addProxyConfig(proxyConfig);
-            authInfo = LinphoneCoreFactory.instance().createAuthInfo(userName, password, domain, domain);
+            authInfo = LinphoneCoreFactory.instance().createAuthInfo(userName, password, REALM, REALM);
             LinphoneManager.getLc().addAuthInfo(authInfo);
             LinphoneManager.getLc().setDefaultProxyConfig(proxyConfig);
 
@@ -237,11 +211,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
         try {
             if (LinphoneManager.getLc().isNetworkReachable()) {
-                String to = "sip:" + callTo + "@" + domain;
+                String to = "sip:" + callTo + "@" + REALM;
                 LinphoneCallParams params = LinphoneManager.getLc().createCallParams(null);
                 params.setVideoEnabled(true);
                 LinphoneAddress address = LinphoneManager.getLc().interpretUrl(to);
-                address.setTransport(LinphoneAddress.TransportType.LinphoneTransportUdp);
+//                address.setTransport(LinphoneAddress.TransportType.LinphoneTransportTcp);
                 mCall = LinphoneManager.getLc().inviteAddressWithParams(address, params);
             }
         } catch (LinphoneCoreException e) {
@@ -257,6 +231,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     mCall = call;
                     break;
                 }
+            }
+            if (mCall == null) {
+                return;
             }
             LinphoneCallParams params = LinphoneManager.getLc().createCallParams(mCall);
             LinphoneManager.getLc().acceptCallWithParams(mCall, params);
@@ -278,6 +255,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 if (mCall != null) {
                     LinphoneManager.getLc().terminateCall(mCall);
                 }
+                mCall = null;
                 break;
             case R.id.btn_accept:
                 accept();

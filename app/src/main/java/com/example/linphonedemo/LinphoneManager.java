@@ -131,7 +131,7 @@ public class LinphoneManager implements LinphoneCoreListener {
         mLc.enableVideo(true, true);
         mLc.setNetworkReachable(true);
         mLc.enableSpeaker(true);
-        mLc.setUserAgent("LinphoneAndroid", "3.10.2");
+        mLc.setUserAgent("MyPhoneAndroid", "1.0.0");
 //        mLc.setRootCA(mLinphoneRootCaFile);
         //set video cam
         int camId = 0;
@@ -155,13 +155,14 @@ public class LinphoneManager implements LinphoneCoreListener {
         mLc.setNatPolicy(natPolicy);
 
         //http proxy
-        TunnelConfig tunnelConfig = LinphoneCoreFactory.instance().createTunnelConfig();
-        tunnelConfig.setPort(443);
-        mLc.tunnelAddServer(tunnelConfig);
+//        TunnelConfig tunnelConfig = LinphoneCoreFactory.instance().createTunnelConfig();
+//        tunnelConfig.setPort(443);
+//        mLc.tunnelAddServer(tunnelConfig);
+//        mLc.tunnelEnableSip(true);
 
         //video & audio preferred setting
-        mLc.setPreferredVideoSize(VideoSize.VIDEO_SIZE_QVGA);
-        mLc.setPreferredFramerate(20f);
+        mLc.setPreferredVideoSize(VideoSize.VIDEO_SIZE_QVGA); //视频分辨率
+        mLc.setPreferredFramerate(12f); //视频帧数
         mLc.setVideoPort(9078); //设置视频UDP 端口
         mLc.setAudioPort(7076);
         mLc.setAudioJittcomp(60); //缓冲区大小，以毫秒记
@@ -172,17 +173,17 @@ public class LinphoneManager implements LinphoneCoreListener {
         mLc.enableEchoLimiter(true);
 
         //enable video payloadtype ? how it works
-//        PayloadType[] types = mLc.getVideoCodecs();
-//        for (PayloadType codec : types) {
-//            if (codec.getMime().equals("VP8")) {
-//                try {
-//                    mLc.setPayloadTypeBitrate(codec, 45000); //bitrate
-//                    mLc.enablePayloadType(codec, true);
-//                } catch (LinphoneCoreException e) {
-//                    e.printStackTrace();
-//                }
-//            }
-//        }
+        PayloadType[] types = mLc.getVideoCodecs();
+        for (PayloadType codec : types) {
+            if (codec.getMime().equals("VP8")) {
+                try {
+                    mLc.setPayloadTypeBitrate(codec, 150000); //ip bitrate
+                    mLc.enablePayloadType(codec, true);
+                } catch (LinphoneCoreException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
 
     }
 
