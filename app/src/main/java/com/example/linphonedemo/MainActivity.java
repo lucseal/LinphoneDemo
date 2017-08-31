@@ -91,6 +91,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private void initView() {
         mVideoView = findViewById(R.id.videoSurface);
         mCaptureView = findViewById(R.id.videoCaptureSurface);
+        mVideoView.setZOrderOnTop(false);
+        mCaptureView.setZOrderOnTop(true);
+        //how it works?
+//        mCaptureView.setZOrderMediaOverlay(true);
 
         mBtnReg = findViewById(R.id.btn_register);
         mBtnCall = findViewById(R.id.btn_call);
@@ -121,8 +125,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             @Override
             public void onVideoPreviewSurfaceReady(AndroidVideoWindowImpl androidVideoWindow, SurfaceView surfaceView) {
                 mCaptureView = surfaceView;
-                LinphoneManager.getLc().setPreviewWindow(null);
-                LinphoneManager.getLc().setPreviewWindow(surfaceView);
+                LinphoneManager.getLc().setPreviewWindow(mCaptureView);
             }
 
             @Override
@@ -160,9 +163,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     @Override
     protected void onResume() {
-        LinphoneManager.getLc().setVideoWindow(androidVideoWindowImpl);
-        checkAndRequestCallPermissions();
         super.onResume();
+
+        checkAndRequestCallPermissions();
+        if (androidVideoWindowImpl != null) {
+            synchronized (androidVideoWindowImpl) {
+                LinphoneManager.getLc().setVideoWindow(androidVideoWindowImpl);
+            }
+        }
+
     }
 
     private void register() {

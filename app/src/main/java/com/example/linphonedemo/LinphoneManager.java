@@ -130,7 +130,7 @@ public class LinphoneManager implements LinphoneCoreListener {
 //        mLc.setMaxCalls(1);
         mLc.enableVideo(true, true);
         mLc.setNetworkReachable(true);
-        mLc.enableSpeaker(true);
+        mLc.enableSpeaker(false); //扬声器
         mLc.setUserAgent("MyPhoneAndroid", "1.0.0");
 //        mLc.setRootCA(mLinphoneRootCaFile);
         //set video cam
@@ -161,8 +161,8 @@ public class LinphoneManager implements LinphoneCoreListener {
 //        mLc.tunnelEnableSip(true);
 
         //video & audio preferred setting
-        mLc.setPreferredVideoSize(VideoSize.VIDEO_SIZE_QVGA); //视频分辨率
-        mLc.setPreferredFramerate(12f); //视频帧数
+        mLc.setPreferredVideoSize(VideoSize.VIDEO_SIZE_VGA); //视频分辨率
+        mLc.setPreferredFramerate(20f); //视频帧数
         mLc.setVideoPort(9078); //设置视频UDP 端口
         mLc.setAudioPort(7076);
         mLc.setAudioJittcomp(60); //缓冲区大小，以毫秒记
