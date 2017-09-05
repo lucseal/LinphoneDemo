@@ -73,6 +73,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         call.enableCamera(true);
                     }
                     Toast.makeText(MainActivity.this, "on call", Toast.LENGTH_SHORT).show();
+                    //auto accept
+                    accept();
                 } else if (state == LinphoneCall.State.OutgoingInit || state == LinphoneCall.State.OutgoingProgress) {
                     Toast.makeText(MainActivity.this, "out going", Toast.LENGTH_SHORT).show();
                 } else if (state == LinphoneCall.State.CallEnd || state == LinphoneCall.State.Error || state == LinphoneCall.State.CallReleased) {

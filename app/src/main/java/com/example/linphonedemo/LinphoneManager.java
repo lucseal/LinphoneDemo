@@ -46,49 +46,49 @@ import java.util.TimerTask;
 public class LinphoneManager implements LinphoneCoreListener {
     private static LinphoneManager instance;
     private LinphoneCore mLc;
-    private Context mServiceContext;
-    private AudioManager mAudioManager;
+//    private Context mServiceContext;
+//    private AudioManager mAudioManager;
 
 
-    private Timer mTimer;
-    private Resources mR;
+//    private Timer mTimer;
+//    private Resources mR;
 
-    private String basePath;
-    private String mLinphoneFactoryConfigFile;
-    private String mLinphoneConfigFile;
-    private String mDynamicConfigFile;
+//    private String basePath;
+//    private String mLinphoneFactoryConfigFile;
+//    private String mLinphoneConfigFile;
+//    private String mDynamicConfigFile;
 //    private String mRingSoundFile;
 //    private String mLinphoneRootCaFile;
 
     LinphoneManager(Context context) {
-        mServiceContext = context;
-        basePath = context.getFilesDir().getAbsolutePath();
-        mLinphoneFactoryConfigFile = basePath + "/linphonerc";
-        mLinphoneConfigFile = basePath + "/.linphonerc";
-        mDynamicConfigFile = basePath + "/assistant_create.rc";
+//        mServiceContext = context;
+//        basePath = context.getFilesDir().getAbsolutePath();
+//        mLinphoneFactoryConfigFile = basePath + "/linphonerc";
+//        mLinphoneConfigFile = basePath + "/.linphonerc";
+//        mDynamicConfigFile = basePath + "/assistant_create.rc";
 //        //铃声
 //        mRingSoundFile = basePath + "/ringtone.mkv";
 //        mLinphoneRootCaFile = basePath + "/rootca.pem";
-        mR = context.getResources();
-        mAudioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+//        mR = context.getResources();
+//        mAudioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
     }
 
 
-    public synchronized static LinphoneManager createAndStart(Context context) {
+    public synchronized static void createAndStart(Context context) {
         if (instance != null) {
             throw new RuntimeException("Linphone Manager is already initialized.");
         }
         instance = new LinphoneManager(context);
         instance.startLibLinphone(context);
-        return instance;
+//        return instance;
     }
 
     private synchronized void startLibLinphone(Context context) {
         try {
 
-            copyIfNotExist(R.raw.linphonerc_default, mLinphoneConfigFile);
-            copyFromPackage(R.raw.linphonerc_factory, new File(mLinphoneFactoryConfigFile).getName());
-            copyFromPackage(R.raw.assistant_create, new File(mDynamicConfigFile).getName());
+//            copyIfNotExist(R.raw.linphonerc_default, mLinphoneConfigFile);
+//            copyFromPackage(R.raw.linphonerc_factory, new File(mLinphoneFactoryConfigFile).getName());
+//            copyFromPackage(R.raw.assistant_create, new File(mDynamicConfigFile).getName());
 
             //创建core
             LinphoneCoreFactory.instance().setDebugMode(true, "myPhone");
@@ -100,7 +100,7 @@ public class LinphoneManager implements LinphoneCoreListener {
             //初始化配置
             initLiblinphone();
 
-        } catch (LinphoneCoreException | IOException e) {
+        } catch (LinphoneCoreException e) {
             e.printStackTrace();
         }
     }
@@ -147,12 +147,12 @@ public class LinphoneManager implements LinphoneCoreListener {
         mLc.setVideoPolicy(true, true);
 //        mLc.getConfig().loadXmlFile(mDynamicConfigFile);
 
-        //nat
-        LinphoneNatPolicy natPolicy = mLc.createNatPolicy();
-        natPolicy.setStunServer("stun.linphone.org");
-        natPolicy.enableIce(true);
-        natPolicy.enableStun(true);
-        mLc.setNatPolicy(natPolicy);
+        //nat  网络地址转换服务器
+//        LinphoneNatPolicy natPolicy = mLc.createNatPolicy();
+//        natPolicy.setStunServer("stun.linphone.org");
+//        natPolicy.enableIce(true);
+//        natPolicy.enableStun(true);
+//        mLc.setNatPolicy(natPolicy);
 
         //http proxy
 //        TunnelConfig tunnelConfig = LinphoneCoreFactory.instance().createTunnelConfig();
@@ -161,8 +161,8 @@ public class LinphoneManager implements LinphoneCoreListener {
 //        mLc.tunnelEnableSip(true);
 
         //video & audio preferred setting
-        mLc.setPreferredVideoSize(VideoSize.VIDEO_SIZE_VGA); //视频分辨率
-        mLc.setPreferredFramerate(20f); //视频帧数
+        mLc.setPreferredVideoSize(VideoSize.VIDEO_SIZE_720P); //视频分辨率
+        mLc.setPreferredFramerate(60f); //首选帧速率，可能会根据带宽限制或网络状况自由降低
         mLc.setVideoPort(9078); //设置视频UDP 端口
         mLc.setAudioPort(7076);
         mLc.setAudioJittcomp(60); //缓冲区大小，以毫秒记
@@ -171,6 +171,9 @@ public class LinphoneManager implements LinphoneCoreListener {
         //echo
         mLc.enableEchoCancellation(true);
         mLc.enableEchoLimiter(true);
+        //download & upload bandwidth, default value 0 means infinite.
+        mLc.setDownloadBandwidth(20480 + 128);
+        mLc.setUploadBandwidth(20480 + 128);
 
         //enable video payloadtype ? how it works
         PayloadType[] types = mLc.getVideoCodecs();
@@ -187,25 +190,25 @@ public class LinphoneManager implements LinphoneCoreListener {
 
     }
 
-    public void copyIfNotExist(int ressourceId, String target) throws IOException {
-        File lFileToCopy = new File(target);
-        if (!lFileToCopy.exists()) {
-            copyFromPackage(ressourceId, lFileToCopy.getName());
-        }
-    }
-
-    private void copyFromPackage(int ressourceId, String target) throws IOException {
-        FileOutputStream lOutputStream = mServiceContext.openFileOutput(target, 0);
-        InputStream lInputStream = mR.openRawResource(ressourceId);
-        int readByte;
-        byte[] buff = new byte[8048];
-        while ((readByte = lInputStream.read(buff)) != -1) {
-            lOutputStream.write(buff, 0, readByte);
-        }
-        lOutputStream.flush();
-        lOutputStream.close();
-        lInputStream.close();
-    }
+//    public void copyIfNotExist(int ressourceId, String target) throws IOException {
+//        File lFileToCopy = new File(target);
+//        if (!lFileToCopy.exists()) {
+//            copyFromPackage(ressourceId, lFileToCopy.getName());
+//        }
+//    }
+//
+//    private void copyFromPackage(int ressourceId, String target) throws IOException {
+//        FileOutputStream lOutputStream = mServiceContext.openFileOutput(target, 0);
+//        InputStream lInputStream = mR.openRawResource(ressourceId);
+//        int readByte;
+//        byte[] buff = new byte[8048];
+//        while ((readByte = lInputStream.read(buff)) != -1) {
+//            lOutputStream.write(buff, 0, readByte);
+//        }
+//        lOutputStream.flush();
+//        lOutputStream.close();
+//        lInputStream.close();
+//    }
 
     private synchronized static LinphoneManager getInstance() {
         if (instance != null) {
